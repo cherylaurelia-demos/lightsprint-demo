@@ -1,0 +1,7 @@
+{
+ "plugin_dir": "~/.claude/plugins/cache/lightsprint/lightsprint/0.7.0",
+ "prompt": "/lightsprint:ask list",
+ "session_id": "75a3bbe8-508c-4a13-92ec-54e4860759b9",
+ "num_turns": 3,
+ "result": "I couldn't list your sessions. The installed Lightsprint command-line tool is too old to have the command.\n\n- **Installed tool:** v0.6.4, built 2026-06-23. Neither `lightsprint session list` nor the older `lightsprint ask list` exists in it. Its help output has no session commands at all.\n- **Plugin:** v0.7.0, which expects the newer `session` commands.\n\nTo fix it, run:\n\n```bash\nlightsprint upgrade\n```\n\nThen run `/lightsprint:ask list` again. I haven't run the upgrade myself because it changes installed software. Tell me if you want me to do it, and I'll upgrade and list your sessions."
+}

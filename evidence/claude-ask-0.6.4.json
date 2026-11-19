@@ -1,0 +1,7 @@
+{
+ "plugin_dir": "~/.claude/plugins/cache/lightsprint/lightsprint/0.6.4",
+ "prompt": "/lightsprint:ask list",
+ "session_id": "4073a0ac-eed9-4bb2-82aa-b703a1260918",
+ "num_turns": 1,
+ "result": "The `/lightsprint:ask` command isn't installed in this session, so it didn't run, and I don't know what its `list` subcommand is supposed to show.\n\nIf it comes from a plugin, your organization can add it as a plugin, or you can add it as a project skill. It will then show up among the available slash commands.\n\nIf you tell me what you wanted listed (for example, tasks, files in `<work dir>` or something else), I can try to get it with the tools I have."
+}

@@ -1,0 +1,14 @@
+$ node scripts/check-skills-vs-release.js ./lightsprint-v0.6.4   # latest GitHub release
+not in release: skills/ask/SKILL.md: lightsprint session
+not in release: skills/ask/SKILL.md: lightsprint ask
+not in release: skills/ask/SKILL.md: lightsprint session list
+not in release: skills/ask/SKILL.md: lightsprint session create
+not in release: skills/ask/SKILL.md: lightsprint session get
+not in release: skills/ask/SKILL.md: lightsprint session send
+not in release: skills/ask/SKILL.md: lightsprint session events
+not in release: skills/ask/SKILL.md: lightsprint session cancel
+not in release: skills/ask/SKILL.md: lightsprint session delete
+exit 1
+
+$ node scripts/check-skills-vs-release.js ./lightsprint-main     # built from main
+exit 0

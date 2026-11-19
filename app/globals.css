@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* From lightsprint.ai's stylesheet: warm off-white surfaces, #ff5619 accent, Inter. */
+@theme {
+  --color-canvas: #f8f7f7;
+  --color-card: #ffffff;
+  --color-line: #e4e2e2;
+  --color-soft: #f3f2f2;
+  --color-ink: #161514;
+  --color-muted: #5c5957;
+  --color-spark: #ff5619;
+  --color-spark-ink: #b83a0b;
+  --color-ok: #17734a;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+a {
+  text-underline-offset: 3px;
+}

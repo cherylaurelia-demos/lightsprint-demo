@@ -1,0 +1,22 @@
+# 2026-11-19T04:51:16Z after: same README install, then ~/.local/bin/lightsprint replaced by v0.6.4 + patch
+
+$ lightsprint version
+lightsprint v0.6.4 (patched) — built 2026-11-19
+
+$ lightsprint upgrade
+Checking for updates...
+Already up to date (v0.6.4).
+
+$ jq installPath installed_plugins.json
+~/.claude/plugins/cache/lightsprint/lightsprint/0.7.0
+
+$ claude plugin list
+Installed plugins:
+
+  ❯ lightsprint@lightsprint
+    Version: 0.7.0
+    Scope: user
+    Status: ✔ enabled
+
+$ claude plugin validate ~/.claude/plugins/cache/lightsprint/lightsprint/0.7.0 | grep -c "skills: lightsprint:"
+18

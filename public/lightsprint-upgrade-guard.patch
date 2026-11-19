@@ -1,0 +1,136 @@
+From d773f03a12d5237336a16285e1d7c8cb0549887c Mon Sep 17 00:00:00 2001
+From: Cheryl Aurelia <demos@job-scout.local>
+Date: Wed, 18 Nov 2026 23:50:35 -0500
+Subject: [PATCH] Keep upgrade from pointing Claude Code at a bin-only plugin
+ dir
+
+install.sh puts the release binary alone in cache/lightsprint/lightsprint/<tag>/bin,
+while claude plugin install puts skills and hooks under the plugin.json version.
+When the two differ (v0.6.4 release vs 0.7.0 on main), 'lightsprint upgrade' hits
+'Already up to date' and still repoints installed_plugins.json at the bin-only dir,
+so Claude Code loads a plugin with no manifest, skills or hooks.
+
+Only repoint when the target has .claude-plugin/plugin.json. Also add
+scripts/check-skills-vs-release.js, which fails when a skill calls a CLI command
+the latest release binary does not have.
+---
+ .../upgrade-installed-plugins.test.js         | 51 +++++++++++++++++++
+ scripts/check-skills-vs-release.js            | 29 +++++++++++
+ scripts/ls-cli.js                             |  4 +-
+ 3 files changed, 83 insertions(+), 1 deletion(-)
+ create mode 100644 scripts/__tests__/upgrade-installed-plugins.test.js
+ create mode 100644 scripts/check-skills-vs-release.js
+
+diff --git a/scripts/__tests__/upgrade-installed-plugins.test.js b/scripts/__tests__/upgrade-installed-plugins.test.js
+new file mode 100644
+index 0000000..86a3b20
+--- /dev/null
++++ b/scripts/__tests__/upgrade-installed-plugins.test.js
+@@ -0,0 +1,51 @@
++import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
++import { join } from 'path';
++import { tmpdir } from 'os';
++import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
++
++const CLI_MODULE = join(import.meta.dir, '../ls-cli.js');
++const CACHE = ['.claude', 'plugins', 'cache', 'lightsprint', 'lightsprint'];
++
++let home;
++
++function installedPath() {
++	const data = JSON.parse(readFileSync(join(home, '.claude', 'plugins', 'installed_plugins.json'), 'utf-8'));
++	return data.plugins['lightsprint@lightsprint'][0].installPath;
++}
++
++function runEnsure(version) {
++	// homedir() is read at process start, so run it with HOME pointed at the sandbox.
++	const proc = Bun.spawnSync(
++		['bun', '-e', `import { ensureInstalledPluginsJson } from ${JSON.stringify(CLI_MODULE)}; ensureInstalledPluginsJson(${JSON.stringify(version)}, { logger: () => {} });`],
++		{ env: { ...process.env, HOME: home } }
++	);
++	expect(proc.exitCode).toBe(0);
++}
++
++describe('upgrade keeps installed_plugins.json on a real plugin dir', () => {
++	beforeEach(() => {
++		home = mkdtempSync(join(tmpdir(), 'ls-upgrade-'));
++		// What install.sh leaves: the marketplace plugin in the plugin.json version dir, the release binary alone in the tag dir.
++		mkdirSync(join(home, ...CACHE, '0.7.0', '.claude-plugin'), { recursive: true });
++		writeFileSync(join(home, ...CACHE, '0.7.0', '.claude-plugin', 'plugin.json'), '{"name":"lightsprint","version":"0.7.0"}');
++		mkdirSync(join(home, ...CACHE, '0.6.4', 'bin'), { recursive: true });
++		writeFileSync(join(home, '.claude', 'plugins', 'installed_plugins.json'), JSON.stringify({
++			version: 2,
++			plugins: { 'lightsprint@lightsprint': [{ scope: 'user', installPath: join(home, ...CACHE, '0.7.0'), version: '0.7.0' }] }
++		}));
++	});
++
++	afterEach(() => rmSync(home, { recursive: true, force: true }));
++
++	test('does not repoint to a version dir that only holds bin/', () => {
++		runEnsure('0.6.4');
++		expect(installedPath()).toBe(join(home, ...CACHE, '0.7.0'));
++	});
++
++	test('repoints to a version dir that has the plugin manifest', () => {
++		mkdirSync(join(home, ...CACHE, '0.6.4', '.claude-plugin'), { recursive: true });
++		writeFileSync(join(home, ...CACHE, '0.6.4', '.claude-plugin', 'plugin.json'), '{"name":"lightsprint","version":"0.6.4"}');
++		runEnsure('0.6.4');
++		expect(installedPath()).toBe(join(home, ...CACHE, '0.6.4'));
++	});
++});
+diff --git a/scripts/check-skills-vs-release.js b/scripts/check-skills-vs-release.js
+new file mode 100644
+index 0000000..eeab510
+--- /dev/null
++++ b/scripts/check-skills-vs-release.js
+@@ -0,0 +1,29 @@
++#!/usr/bin/env node
++// Fails when a skill calls a CLI command that the binary users install (latest GitHub release) doesn't have.
++// Usage: node scripts/check-skills-vs-release.js <path to release binary>
++import { execFileSync } from 'node:child_process';
++import { readdirSync, readFileSync } from 'node:fs';
++import { join } from 'node:path';
++
++const binary = process.argv[2];
++if (!binary) {
++	console.error('Usage: node scripts/check-skills-vs-release.js <release binary>');
++	process.exit(2);
++}
++const released = new Set(JSON.parse(execFileSync(binary, ['describe'], { encoding: 'utf-8' })).commands);
++// Not in describe, but every binary has them.
++for (const c of ['help', 'version', 'describe', 'config', 'cc-start', 'cc-end', 'cc-event', 'cc-pr-created']) released.add(c);
++
++const skillsDir = join(import.meta.dirname, '..', 'skills');
++const missing = [];
++for (const skill of readdirSync(skillsDir)) {
++	const text = readFileSync(join(skillsDir, skill, 'SKILL.md'), 'utf-8');
++	for (const [, cmd, sub] of text.matchAll(/\blightsprint ([a-z][a-z-]*)(?: ([a-z][a-z-]*))?/g)) {
++		const name = cmd === 'ask' ? 'session' : cmd; // deprecated alias
++		const has = released.has(name) || released.has(`${name}-${sub}`) || [...released].some((r) => r.startsWith(`${name}-`));
++		if (has) continue;
++		missing.push(`skills/${skill}/SKILL.md: lightsprint ${sub ? `${cmd} ${sub}` : cmd}`);
++	}
++}
++for (const m of new Set(missing)) console.log(`not in release: ${m}`);
++process.exit(missing.length ? 1 : 0);
+diff --git a/scripts/ls-cli.js b/scripts/ls-cli.js
+index 70ea3e5..e30b7c1 100644
+--- a/scripts/ls-cli.js
++++ b/scripts/ls-cli.js
+@@ -2688,10 +2688,12 @@ async function cmdSessionDelete(args, opts) {
+ 
+ // ─── helpers ─────────────────────────────────────────────────────────────
+ 
+-function ensureInstalledPluginsJson(version, { logger = console.log } = {}) {
++export function ensureInstalledPluginsJson(version, { logger = console.log } = {}) {
+ 	const home = homedir();
+ 	const pluginCacheDir = join(home, '.claude', 'plugins', 'cache', 'lightsprint', 'lightsprint', version);
+ 	const installedPluginsPath = join(home, '.claude', 'plugins', 'installed_plugins.json');
++	// install.sh puts only bin/ in the release-version dir; pointing Claude Code there drops every skill and hook.
++	if (!existsSync(join(pluginCacheDir, '.claude-plugin', 'plugin.json'))) return;
+ 	try {
+ 		const pluginsData = JSON.parse(readFileSync(installedPluginsPath, 'utf-8'));
+ 		const entries = pluginsData.plugins?.['lightsprint@lightsprint'];
+-- 
+2.50.1 (Apple Git-155)
+

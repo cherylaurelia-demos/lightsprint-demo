@@ -1,0 +1,65 @@
+# 2026-11-19T04:45:57Z  claude 2.1.327 (Claude Code)
+
+$ bash install.sh  (README curl fallback, non-interactive)
+Installing Lightsprint for Claude Code...
+Downloading CLI binary...
+Installed lightsprint to ~/.claude/plugins/cache/lightsprint/lightsprint/0.6.4/bin/
+Also copied to ~/.local/bin/ for CLI convenience
+Installing plugin...
+Adding marketplace…SSH not configured, cloning via HTTPS: https://github.com/SprintsAI/lightsprint-claude-code-plugin.git
+Refreshing marketplace cache (timeout: 120s)…
+Cloning repository (timeout: 120s): https://github.com/SprintsAI/lightsprint-claude-code-plugin.git
+Clone complete, validating marketplace…
+Cleaning up old marketplace cache…
+✔ Successfully added marketplace: lightsprint (declared in user settings)
+Installing plugin "lightsprint"...✔ Successfully installed plugin: lightsprint@lightsprint (scope: user)
+Plugin installed successfully.
+Note: ~/.local/bin is not in your PATH.
+  Add it with: export PATH="~/.local/bin:$PATH"
+─────────────────────────────────────────
+  No git repository detected
+─────────────────────────────────────────
+  To connect a repo to Lightsprint, open Claude Code
+  inside a git repository and run:
+    /lightsprint:tasks
+  This will trigger the OAuth flow and link that repo.
+Done!
+
+$ ls ~/.claude/plugins/cache/lightsprint/lightsprint/*
+0.6.4: bin 
+0.7.0: CHANGELOG.md CLAUDE.md README.md bun.lock docs hooks install.sh node_modules npx-install.js package.json pi-extension scripts skills uninstall.sh 
+
+$ ~/.local/bin/lightsprint version
+lightsprint v0.6.4 (44e6ad9) — built 2026-06-23T23:07:41Z
+
+$ grep -m1 lightsprint session ~/.claude/plugins/cache/lightsprint/lightsprint/0.7.0/skills/ask/SKILL.md
+lightsprint session $ARGUMENTS
+
+$ ~/.local/bin/lightsprint session list
+Unknown command: session. Use 'lightsprint help' for usage information.
+
+$ ~/.local/bin/lightsprint upgrade
+Checking for updates...
+Updated installed_plugins.json
+Already up to date (v0.6.4).
+
+$ jq installPath installed_plugins.json
+~/.claude/plugins/cache/lightsprint/lightsprint/0.6.4
+
+$ claude plugin list
+Installed plugins:
+
+  ❯ lightsprint@lightsprint
+    Version: 0.6.4
+    Scope: user
+    Status: ✔ enabled
+
+
+$ claude plugin validate ~/.claude/plugins/cache/lightsprint/lightsprint/0.6.4
+Validating plugin manifest: ~/.claude/plugins/cache/lightsprint/lightsprint/0.6.4
+
+✘ Found 1 error:
+
+  ❯ directory: No manifest found in directory. Expected .claude-plugin/marketplace.json or .claude-plugin/plugin.json
+
+✘ Validation failed
